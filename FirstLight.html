@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Puzzle Game</title>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+/* Intro video page */
+#intro {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#introVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+#settingsIcon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+    background: url('2.png') no-repeat center center;
+    background-size: contain;
+    cursor: pointer;
+    z-index: 20;
+}
+
+/* Countdown overlay */
+#countdownOverlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: url('countdown-bg.jpg') no-repeat center center;
+    background-size: cover;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.count-number {
+    font-size: 10em;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 20px #000;
+    opacity: 0;
+    transform: scale(0);
+    animation: zoomFade 1s forwards;
+}
+
+@keyframes zoomFade {
+    0% { transform: scale(0.5); opacity: 0; }
+    30% { transform: scale(1.5); opacity: 1; }
+    70% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0; }
+}
+
+/* Game page */
+/* Game page */
+#gamePage {
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    justify-content: center; /* vertically center */
+    align-items: center;     /* horizontally center */
+    text-align: center;
+    background: #000;
+}
+
+.grid {
+    display: grid;
+    gap: 2px;
+    /* remove fixed margin */
+    /* width/height handled dynamically */
+}
+
+
+.tile {
+    width:130px;
+    height: 130px;
+    background-image: url('6.png'); /* single full image */
+    background-size: 600px 600px; /* adjust based on tileCount*tile size */
+    cursor: pointer;
+    border-radius: 2px;
+    transition: 0.2s;
+}
+
+.tile.empty { background: transparent; cursor: pointer; }
+
+button {
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: rgba(255,255,255,0.8);
+    color: #2575fc;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+button:hover { background-color: rgba(255,255,255,1); }
+
+#moves {
+    font-size: 1.5em;
+    color: #fff;
+    margin-top: 10px;
+    text-shadow: 1px 1px 5px #000;
+}
+
+/* Win/Loss Page */
+#endPage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #fff;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 4em;
+    text-align: center;
+    flex-direction: column;
+}
+
+/* Admin Overlay */
+#adminOverlay {
+    position: absolute;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 30;
+}
+
+#adminOverlay input {
+    margin: 10px;
+    padding: 5px;
+    width: 80px;
+    font-size: 1em;
+}
+</style>
+</head>
+<body>
+
+<!-- Intro Video Page -->
+<div id="intro">
+    <video id="introVideo" autoplay muted>
+        <source src="intro.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div id="settingsIcon" title="Admin Settings"></div>
+</div>
+
+<!-- Countdown -->
+<div id="countdownOverlay"></div>
+
+<!-- Game Page -->
+<div id="gamePage">
+    <h1>Number Puzzle</h1>
+    <div id="puzzle-grid" class="grid"></div>
+    <p id="moves">Moves: 0</p>
+    <p id="timer">Time: 0</p>
+</div>
+
+<!-- Win/Loss Page -->
+<div id="endPage"></div>
+
+<!-- Admin Overlay -->
+<div id="adminOverlay">
+    <h2>Admin Settings</h2>
+    <label>Game Time (seconds): <input type="number" id="gameTimeInput" value="60" min="10"></label>
+    <br>
+    <label>Tile Count (3-6): <input type="number" id="tileCountInput" value="4" min="3" max="6"></label>
+    <br>
+    <button id="saveSettings">Save</button>
+    <button id="closeAdmin">Close</button>
+</div>
+
+<script>
+let gameTime = 60;
+let tileCount = 4;
+let moves = 0;
+let tiles = [];
+let emptyTile = {row:0,col:0};
+let timerInterval;
+
+// DOM
+const intro = document.getElementById('intro');
+const introVideo = document.getElementById('introVideo');
+const settingsIcon = document.getElementById('settingsIcon');
+const adminOverlay = document.getElementById('adminOverlay');
+const saveSettings = document.getElementById('saveSettings');
+const closeAdmin = document.getElementById('closeAdmin');
+const gameTimeInput = document.getElementById('gameTimeInput');
+const tileCountInput = document.getElementById('tileCountInput');
+
+const countdownOverlay = document.getElementById("countdownOverlay");
+const gamePage = document.getElementById("gamePage");
+const grid = document.getElementById("puzzle-grid");
+const movesDisplay = document.getElementById("moves");
+const timerDisplay = document.getElementById("timer");
+const endPage = document.getElementById("endPage");
+
+// Admin events
+settingsIcon.addEventListener('click', ()=> adminOverlay.style.display='flex');
+closeAdmin.addEventListener('click', ()=> adminOverlay.style.display='none');
+saveSettings.addEventListener('click', ()=>{
+    const t=parseInt(gameTimeInput.value);
+    const c=parseInt(tileCountInput.value);
+    if(t>=10 && c>=3 && c<=6){
+        gameTime=t;
+        tileCount=c;
+        alert(`Game time: ${gameTime}s, Tile count: ${tileCount}`);
+        adminOverlay.style.display='none';
+    }else alert("Invalid values");
+});
+
+// Video click starts countdown
+introVideo.addEventListener('click', ()=>{
+    intro.style.display='none';
+    startCountdown();
+});
+
+// Countdown
+function startCountdown(){
+    countdownOverlay.style.display='flex';
+    const numbers=[3,2,1];
+    let index=0;
+    function showNext(){
+        if(index<numbers.length){
+            const span=document.createElement('span');
+            span.classList.add('count-number');
+            span.innerText=numbers[index];
+            countdownOverlay.appendChild(span);
+            index++;
+            setTimeout(()=>{countdownOverlay.removeChild(span); showNext();},1000);
+        }else showStart();
+    }
+    showNext();
+}
+
+function showStart(){
+    const span=document.createElement('span');
+    span.classList.add('count-number');
+    span.innerText="START!";
+    span.style.color="#ff0";
+    countdownOverlay.appendChild(span);
+    setTimeout(()=>{
+        countdownOverlay.style.display='none';
+        countdownOverlay.innerHTML='';
+        gamePage.style.display='flex';
+        initGrid();
+        startTimer();
+    },1000);
+}
+
+// Timer
+function startTimer(){
+    let timeLeft=gameTime;
+    timerDisplay.innerText=`Time: ${timeLeft}`;
+    timerInterval=setInterval(()=>{
+        timeLeft--;
+        timerDisplay.innerText=`Time: ${timeLeft}`;
+        if(timeLeft<=0){
+            clearInterval(timerInterval);
+            showEndPage(false);
+        }
+    },1000);
+}
+
+function initGrid(){
+    tiles=[]; 
+    grid.innerHTML="";
+
+    // Calculate grid size based on viewport
+    const maxGridSize = Math.min(window.innerWidth, window.innerHeight) * 0.8; // 80% of smaller dimension
+    const tileSize = maxGridSize / tileCount;
+
+    grid.style.width = grid.style.height = maxGridSize + "px";
+    grid.style.gridTemplateColumns=`repeat(${tileCount}, ${tileSize}px)`;
+    grid.style.gridTemplateRows=`repeat(${tileCount}, ${tileSize}px)`;
+
+    let numbers=[...Array(tileCount*tileCount-1).keys()].map(n=>n+1);
+    numbers=shuffleArray(numbers);
+    numbers.push(null);
+
+    for(let i=0;i<tileCount;i++){
+        for(let j=0;j<tileCount;j++){
+            let number=numbers[i*tileCount+j];
+            let tile=document.createElement("div");
+            tile.classList.add("tile");
+            tile.style.width = tile.style.height = tileSize + "px";
+            if(number===null) {
+                tile.classList.add("empty");
+            } else {
+                tile.style.backgroundSize = `${tileCount*tileSize}px ${tileCount*tileSize}px`;
+                tile.style.backgroundPosition = `-${j*tileSize}px -${i*tileSize}px`;
+            }
+
+            tile.addEventListener("click",()=> moveTile(i,j));
+            grid.appendChild(tile);
+            tiles.push({tile,row:i,col:j,number});
+            if(number===null) emptyTile={row:i,col:j};
+        }
+    }
+    moves=0;
+    movesDisplay.innerText="Moves: 0";
+}
+
+function moveTile(row,col){
+    if((Math.abs(emptyTile.row-row)===1 && emptyTile.col===col)||
+       (Math.abs(emptyTile.col-col)===1 && emptyTile.row===row)){
+        swapTiles(row,col,emptyTile.row,emptyTile.col);
+        emptyTile={row,col};
+        moves++;
+        movesDisplay.innerText="Moves: "+moves;
+        if(checkWin()) showEndPage(true);
+    }
+}
+
+function swapTiles(r1,c1,r2,c2){
+    const idx1=r1*tileCount+c1;
+    const idx2=r2*tileCount+c2;
+    [tiles[idx1].number,tiles[idx2].number]=[tiles[idx2].number,tiles[idx1].number];
+    tiles[idx1].tile.classList.toggle("empty");
+    tiles[idx2].tile.classList.toggle("empty");
+}
+
+function checkWin(){
+    for(let i=0;i<tileCount*tileCount-1;i++){
+        if(tiles[i].number!==i+1) return false;
+    }
+    return true;
+}
+
+// Show Win/Loss page with auto-redirect after 7 seconds
+function showEndPage(win){
+    clearInterval(timerInterval);
+    gamePage.style.display='none';
+    endPage.style.display='flex';
+    endPage.innerHTML = win ? "🎉 You Win! 🎉" : "⏰ Time's Up! You Lose!";
+
+    setTimeout(()=>{
+        endPage.style.display = 'none';
+        intro.style.display = 'flex';
+        grid.innerHTML = '';
+    }, 7000);
+}
+
+function shuffleArray(arr){
+    let array=arr.slice();
+    for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+    }
+    return array;
+}
+</script>
+</body>
+</html>
