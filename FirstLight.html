@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=1080, height=1920, initial-scale=1.0, user-scalable=no">
 <title>1080x1920 Web App</title>
 
 <style>
@@ -15,6 +15,7 @@ html, body {
     font-family: Arial, sans-serif;
 }
 
+/* COMMON PAGE STYLE */
 .page {
     width: 100%;
     height: 100%;
@@ -22,11 +23,12 @@ html, body {
     position: relative;
 }
 
-/* ========== PAGE 1 ========== */
+/* PAGE 1 */
 #page1 {
     background: url("1.png") center/cover no-repeat;
 }
 
+/* DRAG AREA */
 #dragArea {
     position: absolute;
     bottom: 400px;
@@ -34,11 +36,6 @@ html, body {
     transform: translateX(-50%);
     width: 830px;
     height: 120px;
-}
-
-#fillLine {
-    width: 0%;
-    height: 100%;
 }
 
 #dragBtn {
@@ -52,21 +49,22 @@ html, body {
     touch-action: none;
 }
 
-/* ========== PAGE 2 ========== */
+/* PAGE 2 */
 #page2 {
     overflow: hidden;
 }
 
 #bgVideo {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     z-index: 0;
 }
 
-/* Buttons */
+/* BUTTONS */
 #buttonBox {
     position: absolute;
     bottom: 300px;
@@ -86,7 +84,7 @@ html, body {
     transition: opacity 0.8s ease;
 }
 
-/* ========== VIDEO PAGE ========== */
+/* VIDEO PAGE */
 #videoPage {
     background: black;
 }
@@ -94,10 +92,10 @@ html, body {
 #videoPlayer {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
 }
 
-/* ========== PAGE 3 ========== */
+/* PAGE 3 */
 #page3 {
     background: url("9.png") center/cover no-repeat;
 }
@@ -109,14 +107,13 @@ html, body {
 <!-- PAGE 1 -->
 <div id="page1" class="page">
     <div id="dragArea">
-        <div id="fillLine"></div>
         <img src="2.png" id="dragBtn">
     </div>
 </div>
 
 <!-- PAGE 2 -->
 <div id="page2" class="page">
-    <video id="bgVideo" loop playsinline muted preload="auto">
+    <video id="bgVideo" loop playsinline preload="auto">
         <source src="1.mp4" type="video/mp4">
     </video>
 
@@ -130,7 +127,6 @@ html, body {
 <!-- VIDEO PAGE -->
 <div id="videoPage" class="page">
    <video id="videoPlayer" playsinline></video>
-
 </div>
 
 <!-- PAGE 3 -->
@@ -190,9 +186,11 @@ function openPage2() {
     page2.style.display = "block";
 
     bgVideo.currentTime = 0;
-    bgVideo.play().then(() => {
-        bgVideo.muted = false;
-        bgVideo.volume = 1;
+    bgVideo.muted = false;
+    bgVideo.volume = 1;
+    bgVideo.play().catch(() => {
+        bgVideo.muted = true;
+        bgVideo.play();
     });
 
     showButtons();
@@ -214,12 +212,23 @@ function playVideo(src) {
 
     videoPlayer.src = src;
     videoPlayer.currentTime = 0;
+    videoPlayer.muted = false;
+    videoPlayer.volume = 1;
     videoPlayer.play();
 }
 
+/* ===== RETURN TO FIRST PAGE AFTER VIDEO ENDS ===== */
 videoPlayer.onended = () => {
     videoPage.style.display = "none";
-    page3.style.display = "block";
+    page1.style.display = "block";
+
+    // Reset all videos to first frame
+    bgVideo.currentTime = 0;
+    bgVideo.play().catch(() => bgVideo.muted = true);
+
+    // Reset drag button
+    dragBtn.style.left = "0px";
+    document.querySelectorAll(".img-btn").forEach(btn => btn.style.opacity = 0);
 };
 </script>
 
