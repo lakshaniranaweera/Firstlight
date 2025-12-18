@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
-<title>1080x1920 Web App</title>
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>No Lag Web App</title>
 
 <style>
 html, body {
@@ -16,77 +18,62 @@ html, body {
 }
 
 .page {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     display: none;
     position: relative;
 }
 
-/* ========== PAGE 1 ========== */
+/* PAGE 1 */
 #page1 {
-    background: url("1.png") center/cover no-repeat;
+    background: url("1.png") center / cover no-repeat;
 }
 
 #dragArea {
     position: absolute;
-    bottom: 400px;
+    bottom: 20vh;
     left: 50%;
     transform: translateX(-50%);
-    width: 830px;
-    height: 120px;
-}
-
-#fillLine {
-    width: 0%;
-    height: 100%;
+    width: 80vw;
+    height: 10vh;
 }
 
 #dragBtn {
     position: absolute;
     top: 50%;
     left: 0;
-    width: 160px;
     height: 100%;
     transform: translateY(-50%);
-    cursor: grab;
     touch-action: none;
 }
 
-/* ========== PAGE 2 ========== */
-#page2 {
-    overflow: hidden;
-}
-
+/* PAGE 2 */
 #bgVideo {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    z-index: 0;
 }
 
-/* Buttons */
 #buttonBox {
     position: absolute;
-    bottom: 300px;
+    bottom: 15vh;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 3vh;
     z-index: 2;
 }
 
 .img-btn {
-    width: 620px;
-    height: 140px;
+    width: 70vw;
     opacity: 0;
-    cursor: pointer;
-    transition: opacity 0.8s ease;
+    transition: opacity 0.6s ease;
 }
 
-/* ========== VIDEO PAGE ========== */
+/* VIDEO PAGE */
 #videoPage {
     background: black;
 }
@@ -97,9 +84,9 @@ html, body {
     object-fit: cover;
 }
 
-/* ========== PAGE 3 ========== */
+/* PAGE 3 */
 #page3 {
-    background: url("9.png") center/cover no-repeat;
+    background: url("9.png") center / cover no-repeat;
 }
 </style>
 </head>
@@ -109,14 +96,18 @@ html, body {
 <!-- PAGE 1 -->
 <div id="page1" class="page">
     <div id="dragArea">
-        <div id="fillLine"></div>
         <img src="2.png" id="dragBtn">
     </div>
 </div>
 
 <!-- PAGE 2 -->
 <div id="page2" class="page">
-    <video id="bgVideo" loop playsinline muted preload="auto">
+    <video id="bgVideo"
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        preload="auto">
         <source src="1.mp4" type="video/mp4">
     </video>
 
@@ -127,99 +118,94 @@ html, body {
     </div>
 </div>
 
-<!-- VIDEO PAGE -->
+<!-- FULL VIDEO -->
 <div id="videoPage" class="page">
-   <video id="videoPlayer" playsinline></video>
-
+    <video id="videoPlayer"
+        playsinline
+        webkit-playsinline
+        preload="auto"></video>
 </div>
 
 <!-- PAGE 3 -->
 <div id="page3" class="page"></div>
 
 <script>
+/* ========= PRELOAD IMAGES ========= */
+["1.png","2.png","3.png","4.png","5.png","9.png"].forEach(src=>{
+    const img = new Image();
+    img.src = src;
+});
+
+/* ========= ELEMENTS ========= */
 const page1 = document.getElementById("page1");
 const page2 = document.getElementById("page2");
 const page3 = document.getElementById("page3");
 const videoPage = document.getElementById("videoPage");
+
 const bgVideo = document.getElementById("bgVideo");
 const videoPlayer = document.getElementById("videoPlayer");
 
 page1.style.display = "block";
 
-/* ===== DRAG LOGIC ===== */
+/* ========= DRAG ========= */
 const dragBtn = document.getElementById("dragBtn");
 const dragArea = document.getElementById("dragArea");
 let dragging = false;
 
 dragBtn.addEventListener("mousedown", startDrag);
-dragBtn.addEventListener("touchstart", startDrag, { passive: false });
+dragBtn.addEventListener("touchstart", startDrag, { passive:false });
 
 document.addEventListener("mouseup", stopDrag);
 document.addEventListener("touchend", stopDrag);
 
 document.addEventListener("mousemove", e => moveDrag(e.clientX));
-document.addEventListener("touchmove", e => moveDrag(e.touches[0].clientX), { passive: false });
+document.addEventListener("touchmove", e => {
+    if(e.touches.length) moveDrag(e.touches[0].clientX);
+},{ passive:false });
 
-function startDrag(e) {
-    dragging = true;
-    e.preventDefault();
-}
+function startDrag(e){ dragging=true; e.preventDefault(); }
+function stopDrag(){ dragging=false; }
 
-function stopDrag() {
-    dragging = false;
-}
-
-function moveDrag(x) {
-    if (!dragging) return;
-
+function moveDrag(x){
+    if(!dragging) return;
     const rect = dragArea.getBoundingClientRect();
-    let pos = Math.max(0, Math.min(x - rect.left, rect.width));
-    let percent = pos / rect.width;
-
-    dragBtn.style.left = (percent * (rect.width - dragBtn.offsetWidth)) + "px";
-
-    if (percent >= 0.95) {
-        dragging = false;
-        openPage2();
-    }
+    let percent = Math.min(1, Math.max(0,(x-rect.left)/rect.width));
+    dragBtn.style.left = percent*(rect.width-dragBtn.offsetWidth)+"px";
+    if(percent>0.95){ dragging=false; openPage2(); }
 }
 
-/* ===== PAGE 2 ===== */
-function openPage2() {
-    page1.style.display = "none";
-    page2.style.display = "block";
+/* ========= PAGE 2 ========= */
+function openPage2(){
+    page1.style.display="none";
+    page2.style.display="block";
 
-    bgVideo.currentTime = 0;
-    bgVideo.play().then(() => {
-        bgVideo.muted = false;
-        bgVideo.volume = 1;
-    });
-
-    showButtons();
-}
-
-/* ===== BUTTON FADE ===== */
-function showButtons() {
-    document.querySelectorAll(".img-btn").forEach((btn, i) => {
-        setTimeout(() => btn.style.opacity = 1, i * 800);
-    });
-}
-
-/* ===== PLAY FULL VIDEO ===== */
-function playVideo(src) {
     bgVideo.pause();
+    bgVideo.currentTime = 0;   // FORCE RELOAD FROM START
+    bgVideo.muted = false;
+    bgVideo.load();
+    bgVideo.play();
 
-    page2.style.display = "none";
-    videoPage.style.display = "block";
+    document.querySelectorAll(".img-btn").forEach((b,i)=>{
+        setTimeout(()=>b.style.opacity=1,i*500);
+    });
+}
 
+/* ========= FULL VIDEO ========= */
+function playVideo(src){
+    bgVideo.pause();
+    page2.style.display="none";
+    videoPage.style.display="block";
+
+    videoPlayer.pause();
     videoPlayer.src = src;
-    videoPlayer.currentTime = 0;
+    videoPlayer.currentTime = 0; // FORCE RELOAD
+    videoPlayer.load();
     videoPlayer.play();
 }
 
-videoPlayer.onended = () => {
-    videoPage.style.display = "none";
-    page3.style.display = "block";
+videoPlayer.onended = ()=>{
+    videoPage.style.display="none";
+    page3.style.display="block";
 };
 </script>
 
