@@ -80,7 +80,7 @@ html, body {
 
 <!-- PAGE 2 -->
 <div id="page2" class="page">
-    <video id="bgVideo" playsinline webkit-playsinline muted loop preload="auto">
+    <video id="bgVideo"  loop autoplay preload="auto">
         <source src="1.mp4" type="video/mp4">
         <source src="1.webm" type="video/webm">
     </video>
@@ -94,7 +94,7 @@ html, body {
 
 <!-- FULL VIDEO PAGE -->
 <div id="videoPage" class="page">
-    <video id="videoPlayer" playsinline webkit-playsinline controls></video>
+    <video id="videoPlayer" playsinline webkit-playsinline></video>
 </div>
 
 <!-- FINAL IMAGE -->
@@ -119,14 +119,7 @@ function showPage(page) {
 /* PAGE 1 → PAGE 2 */
 page1.addEventListener("click", () => {
     showPage(page2);
-
-    // Play muted first for iOS
-    bgVideo.muted = true;
-    bgVideo.currentTime = 0;
-    bgVideo.play().then(() => {
-        // Unmute after user interaction
-        bgVideo.muted = false;
-    }).catch(err => console.log("Autoplay failed:", err));
+    bgVideo.play().catch(err => console.log("Autoplay failed:", err));
 });
 
 /* PLAY FULL VIDEO */
@@ -136,19 +129,13 @@ function playVideo(src) {
 
     videoPlayer.src = src;
     videoPlayer.currentTime = 0;
-    videoPlayer.play().catch(err => {
-        console.log("Video play failed:", err);
-    });
+    videoPlayer.muted = false;  // change to true if you want muted
+    videoPlayer.play().catch(err => console.log("Video play failed:", err));
 }
 
 /* VIDEO END → SHOW FINAL IMAGE */
 videoPlayer.addEventListener("ended", () => {
     showPage(page3);
-});
-
-// Optional: tap on background video to unmute if needed
-bgVideo.addEventListener("click", () => {
-    if(bgVideo.muted) bgVideo.muted = false;
 });
 </script>
 
